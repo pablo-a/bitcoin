@@ -4,12 +4,20 @@ import json
 import pandas as pd
 
 def main():
+    """main parameters :
+    m = Exchange plateforme
+    r = number of days of data since today. (all time if empty.)
+    i = intervalle of time between each point."""
+
     lst_plat = ["krakenUSD", "bitfinexUSD", "bitstampUSD", "btceUSD"]
+    lst_intervalle = ["1-min", "5-min", "15-min", "30-min", "Hourly", "2-hour",
+    "6-hour", "12-hour", "Daily", "Weekly"]
+
     for plateforme in lst_plat:
         url = ("https://bitcoincharts.com/charts/chart.json?m=%s&SubmitButton"
-        "=Draw&r=&i=&c=0&s=&e=&Prev=&Next=&t=S&b=&a1=&m1=10&a2=&m2=25&x=0&i1=&i2=&i3"
+        "=Draw&r=&i=%s&c=0&s=&e=&Prev=&Next=&t=S&b=&a1=&m1=10&a2=&m2=25&x=0&i1=&i2=&i3"
         "=&i4=&v=1&cv=0&ps=0&l=0&p=0&")
-        url = url % plateforme
+        url = url % (plateforme, intervalle)
 
         json_response = requests.get(url)
         data = json.loads(json_response.content)
@@ -25,7 +33,6 @@ def main():
         lst_volume_currency = [elem[6] for elem in data]
         lst_price = [elem[7] for elem in data]
 
-        ts_to_date_formula = "=(((/60)/60)/24)+DATE(1970;1;1)"
 
         # df = pd.DataFrame([lst_date, lst_open, lst_high, lst_low, lst_close,
         # lst_volume_bitcoin, lst_volume_currency, lst_price])
