@@ -16,21 +16,17 @@ import time
 # nonce = always increasing unsigned 64 bit integer
 # otp = two-factor password (if two-factor enabled, otherwise not required)
 
-
-
-
-
+# inheritance of object for python2 compatibility
 class KrakenApi(object):
     """docstring de la classe KrakenApi : """
 
     def check_asset_exists(self, asset_ticker):
-        """INPUT : asset pair Ticker
+        """INPUT : asset pair Ticker (eg. XETHZUSD)
         OUTPUT : 1 if it exists, 0 otherwise"""
         uri = "https://api.kraken.com/0/public/AssetPairs"
         params = {"pair" : asset_ticker}
         response = requests.get(uri, params=params)
         data = json.loads(response.content)
-
         return 0 if data['error'] else 1
 
     def get_server_time(self):
@@ -51,24 +47,77 @@ class KrakenApi(object):
 
         return (data['result']["unixtime"], date_object)
 
+
+    def get_trading_asset_details(self, asset_ticker):
+        """Useful for more details like leverage, fees, margin on an asset.
+
+        INPUT :
+        info = info to retrieve (optional):
+            info = all info (default)
+            leverage = leverage info
+            fees = fees schedule
+            margin = margin info
+        pair = comma delimited list of asset pairs to get info on (optional.  default = all)
+
+        OUTPUT :
+        <pair_name> = pair name
+            altname = alternate pair name
+            aclass_base = asset class of base component
+            base = asset id of base component
+            aclass_quote = asset class of quote component
+            quote = asset id of quote component
+            lot = volume lot size
+            pair_decimals = scaling decimal places for pair
+            lot_decimals = scaling decimal places for volume
+            lot_multiplier = amount to multiply lot volume by to get currency volume
+            leverage_buy = array of leverage amounts available when buying
+            leverage_sell = array of leverage amounts available when selling
+            fees = fee schedule array in [volume, percent fee] tuples
+            fees_maker = maker fee schedule array in [volume, percent fee] tuples (if on maker/taker)
+            fee_volume_currency = volume discount currency
+            margin_call = margin call level
+            margin_stop = stop-out/liquidation margin level"""
+
+        uri = "https://api.kraken.com/0/public/AssetPairs"
+        params = {"pair" : asset_ticker}
+        return 0
+
     def get_asset_info(self, asset_ticker):
         """INPUT : One or more asset ticker (ex : XETHZUSD[,XBTCZEUR,...])
+
         OUTPUT : list of asset object infos.
         <pair_name> = pair name
-            a = ask array(<price>, <whole lot volume>, <lot volume>),
-            b = bid array(<price>, <whole lot volume>, <lot volume>),
-            c = last trade closed array(<price>, <lot volume>),
-            v = volume array(<today>, <last 24 hours>),
-            p = volume weighted average price array(<today>, <last 24 hours>),
-            t = number of trades array(<today>, <last 24 hours>),
-            l = low array(<today>, <last 24 hours>),
-            h = high array(<today>, <last 24 hours>),
-            o = today's opening price"""
+            ask = ask array(<price>, <whole lot volume>, <lot volume>),
+            bid = bid array(<price>, <whole lot volume>, <lot volume>),
+            last_trade = last trade closed array(<price>, <lot volume>),
+            volume = volume array(<today>, <last 24 hours>),
+            weighted_volume = volume weighted average price array(<today>, <last 24 hours>),
+            trade_nb = number of trades array(<today>, <last 24 hours>),
+            low = low array(<today>, <last 24 hours>),
+            high = high array(<today>, <last 24 hours>),
+            open = today's opening price"""
+
+        key_conversion = {
+            "a" : "ask",
+            "b" : "bid",
+            "c" : "last_trade",
+            "v" : "volume",
+            "p" : "weighted_volume",
+            "t" : "trade_nb",
+            "l" : "low",
+            "h" : "high",
+            "o" : "open"
+        }
 
         uri = "https://api.kraken.com/0/public/Ticker"
         params = {"pair" : asset_ticker}
         response = requests.get(uri, params=params)
         data = json.loads(response.content)
+
+        # change keys name
+        for old_key in key_conversion:
+            new_key = key_conversion[old_key]
+            data[new_key] = data.pop(old_key)
 
         if data['error']:
             print(data['error'])
