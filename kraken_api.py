@@ -47,7 +47,6 @@ class KrakenApi(object):
 
         return (data['result']["unixtime"], date_object)
 
-
     def get_trading_asset_details(self, asset_ticker):
         """Useful for more details like leverage, fees, margin on an asset.
 
@@ -59,7 +58,7 @@ class KrakenApi(object):
             margin = margin info
         pair = comma delimited list of asset pairs to get info on (optional.  default = all)
 
-        OUTPUT :
+        OUTPUT : list of asset_pair detail_info.
         <pair_name> = pair name
             altname = alternate pair name
             aclass_base = asset class of base component
@@ -80,7 +79,12 @@ class KrakenApi(object):
 
         uri = "https://api.kraken.com/0/public/AssetPairs"
         params = {"pair" : asset_ticker}
-        return 0
+        response = requests.get(uri, params=params)
+        data = json.loads(response.content)
+        if data['error']:
+            print(data['error'])
+            return None
+        return [data['result'][asset] for asset in data['result']]
 
     def get_asset_info(self, asset_ticker):
         """INPUT : One or more asset ticker (ex : XETHZUSD[,XBTCZEUR,...])
@@ -114,15 +118,15 @@ class KrakenApi(object):
         response = requests.get(uri, params=params)
         data = json.loads(response.content)
 
-        # change keys name
-        for old_key in key_conversion:
-            new_key = key_conversion[old_key]
-            data[new_key] = data.pop(old_key)
-
         if data['error']:
             print(data['error'])
             return None
 
+        # change keys name then return result
+        for asset in data['result']:
+            for old_key in key_conversion:
+                new_key = key_conversion[old_key]
+                data['result'][asset][new_key] = data['result'][asset].pop(old_key)
         return [data['result'][asset] for asset in data["result"]]
 
     def get_asset_value(self, asset_ticker, interval=1, since=""):
@@ -151,15 +155,43 @@ class KrakenApi(object):
 
         return [data['result'][asset] for asset in data['result']]
 
+    def get_order_book(self, asset_ticker, count="all"):
+        """fetch the market depth for an asset.
+        INTPUT :
+        pair = asset pair to get market depth for
+        count = maximum number of asks/bids (optional)
+
+        OUTPUT : array of pair name and recent trade data
+        <pair_name> = pair name
+            asks = ask side array of array entries(<price>, <volume>, <timestamp>)
+            bids = bid side array of array entries(<price>, <volume>, <timestamp>)"""
+
+        uri = "https://api.kraken.com/0/public/Depth"
+        params = {"pair" : asset_ticker, "count" : count}
+        response = requests.get(uri, params=params)
+        data = json.loads(response.content)
+        if data['error']:
+            print(data['error'])
+            return None
+
+        return data['result'][asset_ticker]
+
 
 if __name__ == '__main__':
     api = KrakenApi()
-    thing = api.get_server_time()
-    print(thing)
 
-    asset_ticker = "XETHZUSD,XBTCZUSD"
+    wrong_ticker = "XETHZUSD,XBTCZUSD"
+    asset_ticker = "XETHZUSD,DASHEUR"
+    single_ticker = "XETHZUSD"
 
-    while 1:
-        print(api.check_asset_exists("XETHZUSD"))
-        values = api.get_asset_info(asset_ticker)
-        print(values)
+    # kind of unit_testing
+    print(api.get_server_time())
+
+    print(api.get_asset_info(asset_ticker))
+    print(api.get_asset_info(wrong_ticker))
+
+    print(api.check_asset_exists("XETHZUSD"))
+
+    print(api.get_order_book(single_ticker, count=10))
+
+    print(api.get_trading_asset_details(asset_ticker))
