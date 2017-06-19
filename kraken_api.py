@@ -176,6 +176,46 @@ class KrakenApi(object):
 
         return data['result'][asset_ticker]
 
+    def get_recent_trade(self, asset_ticker, since=""):
+        """INPUT :
+        pair = asset pair to get trade data for (only one)
+        since = return trade data since given id (optional.  exclusive)
+
+        OUTPUT : array of pair name and recent trade data
+        <pair_name> = pair name
+            array of array entries(<price>, <volume>, <time>, <buy/sell>, <market/limit>, <miscellaneous>)
+        last = id to be used as since when polling for new trade data"""
+
+        uri = "https://api.kraken.com/0/public/Trades"
+        params = {"pair" : asset_ticker, "since" : since}
+        response = requests.get(uri, params=params)
+        data = json.loads(response.content)
+        if data['error']:
+            print(data['error'])
+            return None
+
+        return data['result'][asset_ticker]
+
+    def get_recent_spread(self, asset_ticker, since=""):
+        """INPUT :
+        pair = asset pair to get spread data for
+        since = return spread data since given id (optional.  inclusive)
+
+        OUTPUT : array of pair name and recent spread data
+        <pair_name> = pair name
+            array of array entries(<time>, <bid>, <ask>)
+        last = id to be used as since when polling for new spread data"""
+
+        uri = "https://api.kraken.com/0/public/Spread"
+        params = {"pair" : asset_ticker, "since" : since}
+        response = requests.get(uri, params=params)
+        data = json.loads(response.content)
+        if data['error']:
+            print(data['error'])
+            return None
+
+        return data['result'][asset_ticker]
+
 
 if __name__ == '__main__':
     api = KrakenApi()
@@ -187,11 +227,20 @@ if __name__ == '__main__':
     # kind of unit_testing
     print(api.get_server_time())
 
-    print(api.get_asset_info(asset_ticker))
-    print(api.get_asset_info(wrong_ticker))
+    print(map(api.get_recent_spread, [wrong_ticker, asset_ticker, single_ticker]))
+    # print(api.get_recent_spread(wrong_ticker))
+    # print(api.get_recent_spread(asset_ticker))
+    # print(api.get_recent_spread(single_ticker))
 
-    print(api.check_asset_exists("XETHZUSD"))
+    # print(api.get_recent_trade(wrong_ticker))
+    # print(api.get_recent_trade(asset_ticker))
+    # print(api.get_recent_trade(single_ticker, since=time.time()))
 
-    print(api.get_order_book(single_ticker, count=10))
-
-    print(api.get_trading_asset_details(asset_ticker))
+    # print(api.get_asset_info(asset_ticker))
+    # print(api.get_asset_info(wrong_ticker))
+    #
+    # print(api.check_asset_exists("XETHZUSD"))
+    #
+    # print(api.get_order_book(single_ticker, count=10))
+    #
+    # print(api.get_trading_asset_details(asset_ticker))
