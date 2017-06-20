@@ -34,7 +34,6 @@ class KrakenApi(object):
             # secret (str) – private key used to sign API messages
             self.secret = f.readline().strip()
 
-
     def _private_query(self, uri, postdata={}):
         """Generic method to perform private requests using Kraken API.
         INPUT :
@@ -69,8 +68,6 @@ class KrakenApi(object):
 
         response = requests.get(url, data=postdata, headers=headers)
         return json.loads(response.content)
-
-
 
     def check_asset_exists(self, asset_ticker):
         """INPUT : asset pair Ticker (eg. XETHZUSD)
