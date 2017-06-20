@@ -46,13 +46,13 @@ class KrakenApi(object):
 
         base_url = "https://api.kraken.com"
 
-        postdata['nonce'] = int(1000*time.time())
+        postdata['nonce'] = int(3*time.time())
         postdata_encoded = urlencode(postdata)
 
         # Nonce + postdata
-        encoded = (str(postdata['nonce']) + postdata_encoded).encode()
+        encoded = (str(postdata['nonce']) + postdata_encoded)
         # URI + SHA256(Nonce + postdata)
-        message = uri.encode() + hashlib.sha256(encoded).digest()
+        message = uri + hashlib.sha256(encoded).digest()
 
         signature = hmac.new(base64.b64decode(self.secret), message, hashlib.sha512)
         sigdigest = base64.b64encode(signature.digest())
@@ -61,12 +61,11 @@ class KrakenApi(object):
             'API-Key': self.api_key,
             # Message signature using HMAC-SHA512 of
             # (URI path + SHA256(nonce + POST data)) and base64 decoded secret API key
-            'API-Sign': sigdigest.decode()
+            'API-Sign': sigdigest
         }
 
         url = base_url + uri
-
-        response = requests.get(url, data=postdata, headers=headers)
+        response = requests.post(url, data=postdata, headers=headers)
         return json.loads(response.content)
 
     def check_asset_exists(self, asset_ticker):
@@ -272,6 +271,16 @@ class KrakenApi(object):
         data = self._private_query(uri)
         return data
 
+    def get_trade_balance(self):
+        uri = "/0/private/TradeBalance"
+        data = self._private_query(uri, postdata={"asset" : ""})
+        return data
+
+    def get_open_orders(self):
+        uri = "/0/private/OpenOrders"
+        data = self._private_query(uri)
+        return data
+
 if __name__ == '__main__':
     api = KrakenApi()
 
@@ -284,7 +293,8 @@ if __name__ == '__main__':
 
     # PRIVATE :
     print(api.get_account_balance())
-
+    print(api.get_trade_balance())
+    print(api.get_open_orders())
     # print(map(api.get_recent_spread, [wrong_ticker, asset_ticker, single_ticker]))
 
 
