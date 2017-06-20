@@ -1,10 +1,14 @@
 # coding=utf-8
 import requests
 import json
+import sys
 import pandas as pd
 
 def main():
-    """main parameters :
+    """USAGE :
+    python get_historical_data.py
+
+    main parameters :
     m = Exchange plateforme
     r = number of days of data since today. (all time if empty.)
     i = intervalle of time between each point."""
@@ -17,12 +21,12 @@ def main():
         url = ("https://bitcoincharts.com/charts/chart.json?m=%s&SubmitButton"
         "=Draw&r=&i=%s&c=0&s=&e=&Prev=&Next=&t=S&b=&a1=&m1=10&a2=&m2=25&x=0&i1=&i2=&i3"
         "=&i4=&v=1&cv=0&ps=0&l=0&p=0&")
-        url = url % (plateforme, intervalle)
+
+        interval = "30-min"
+        url = url % (plateforme, interval)
 
         json_response = requests.get(url)
         data = json.loads(json_response.content)
-        # for elem in data:
-        #     print(elem)
 
         lst_date = [elem[0] for elem in data]
         lst_open = [elem[1] for elem in data]
@@ -32,11 +36,6 @@ def main():
         lst_volume_bitcoin = [elem[5] for elem in data]
         lst_volume_currency = [elem[6] for elem in data]
         lst_price = [elem[7] for elem in data]
-
-
-        # df = pd.DataFrame([lst_date, lst_open, lst_high, lst_low, lst_close,
-        # lst_volume_bitcoin, lst_volume_currency, lst_price])
-
 
         df = pd.DataFrame({
             "date" : lst_date,
@@ -50,7 +49,6 @@ def main():
         })
 
         file_name = plateforme + ".xlsx"
-
         # ["date", "open", "high", "low", "close", "volume (BTC)", "volume (USD)", "price"]
         df.to_excel(file_name, header=True, index=False)
 

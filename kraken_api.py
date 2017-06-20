@@ -1,8 +1,14 @@
 # coding=utf-8
 import requests
+from urllib import urlencode
 import json
 from datetime import datetime
 import time
+# private query signing
+import hashlib
+import hmac
+import base64
+
 
 # All API URLs should use the domain api.kraken.com.
 
@@ -19,6 +25,52 @@ import time
 # inheritance of object for python2 compatibility
 class KrakenApi(object):
     """docstring de la classe KrakenApi : """
+
+
+    def __init__(self):
+        with open("credentials.txt", "r") as f:
+            # api_key (str) – key required to make queries to the API
+            self.api_key = f.readline().strip()
+            # secret (str) – private key used to sign API messages
+            self.secret = f.readline().strip()
+
+
+    def _private_query(self, uri, postdata={}):
+        """Generic method to perform private requests using Kraken API.
+        INPUT :
+        uri : the prefix where to find ressource ('/0/private/TradeBalance')
+        postdata : dictionnary with request data.
+
+        OUTPUT :
+        request result (dictionnary or None if an error occured)"""
+
+
+        base_url = "https://api.kraken.com"
+
+        postdata['nonce'] = int(1000*time.time())
+        postdata_encoded = urlencode(postdata)
+
+        # Nonce + postdata
+        encoded = (str(postdata['nonce']) + postdata_encoded).encode()
+        # URI + SHA256(Nonce + postdata)
+        message = uri.encode() + hashlib.sha256(encoded).digest()
+
+        signature = hmac.new(base64.b64decode(self.secret), message, hashlib.sha512)
+        sigdigest = base64.b64encode(signature.digest())
+
+        headers = {
+            'API-Key': self.api_key,
+            # Message signature using HMAC-SHA512 of
+            # (URI path + SHA256(nonce + POST data)) and base64 decoded secret API key
+            'API-Sign': sigdigest.decode()
+        }
+
+        url = base_url + uri
+
+        response = requests.get(url, data=postdata, headers=headers)
+        return json.loads(response.content)
+
+
 
     def check_asset_exists(self, asset_ticker):
         """INPUT : asset pair Ticker (eg. XETHZUSD)
@@ -216,6 +268,12 @@ class KrakenApi(object):
 
         return data['result'][asset_ticker]
 
+    # start of private methods (account needed)
+    def get_account_balance(self):
+        """Result: array of asset names and balance amount"""
+        uri = "/0/private/Balance"
+        data = self._private_query(uri)
+        return data
 
 if __name__ == '__main__':
     api = KrakenApi()
@@ -227,10 +285,11 @@ if __name__ == '__main__':
     # kind of unit_testing
     print(api.get_server_time())
 
-    print(map(api.get_recent_spread, [wrong_ticker, asset_ticker, single_ticker]))
-    # print(api.get_recent_spread(wrong_ticker))
-    # print(api.get_recent_spread(asset_ticker))
-    # print(api.get_recent_spread(single_ticker))
+    # PRIVATE :
+    print(api.get_account_balance())
+
+    # print(map(api.get_recent_spread, [wrong_ticker, asset_ticker, single_ticker]))
+
 
     # print(api.get_recent_trade(wrong_ticker))
     # print(api.get_recent_trade(asset_ticker))
